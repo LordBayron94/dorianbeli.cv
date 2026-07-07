@@ -297,6 +297,7 @@ section > p { max-width: 46em; }
 .cert-list p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
 
 /* Language table */
+.table-wrap { overflow-x: auto; }
 .lang-table {
   margin-top: 0.75rem;
   border-collapse: collapse;
