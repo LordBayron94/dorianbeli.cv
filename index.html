@@ -22,6 +22,7 @@
       <button id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
       <ul id="nav-links">
         <li><a href="#about">About</a></li>
+        <li><a href="#news">News</a></li>
         <li><a href="#experience">Experience</a></li>
         <li><a href="#skills">Tech Stack</a></li>
         <li><a href="#certifications">Certifications</a></li>
@@ -33,28 +34,42 @@
 
   <header id="top" class="hero">
     <div class="hero-inner">
-      <div class="hero-text">
-        <p class="hero-kicker">Data Engineer · Doctoral Researcher</p>
-        <h1>Dorian&nbsp;Beli</h1>
-        <p class="hero-sub">
-          Data Engineer with a multifaceted skill set encompassing the end-to-end data lifecycle —
-          on-premise and AWS cloud architecture, data pipelines and DevOps.
-        </p>
-        <blockquote class="hero-tagline">
-          From on-premise clusters to the AWS cloud — building data platforms across the full lifecycle.
-        </blockquote>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="mailto:dobeli@utu.fi">Email me</a>
-          <a class="btn" href="https://www.linkedin.com/in/dorianbeli/" target="_blank" rel="noopener">LinkedIn</a>
-          <a class="btn" href="https://github.com/LordBayron94" target="_blank" rel="noopener">GitHub</a>
-          <a class="btn" href="assets/DorianBeli-CV.pdf" download>Download CV</a>
-        </div>
-      </div>
       <div class="hero-portrait">
         <img src="assets/photo.jpg" alt="Portrait of Dorian Beli"
              onerror="this.style.display='none';document.getElementById('monogram').style.display='flex';">
         <div id="monogram" class="monogram" aria-hidden="true">DB</div>
       </div>
+      <h1>Dorian&nbsp;Beli</h1>
+      <p class="hero-kicker">Doctoral Researcher · University of Turku</p>
+      <p class="hero-sub">
+        PhD research on context-aware OCR/HTR for historical documents with vision-language models,
+        built on a data-engineering career across AWS and on-premise big-data platforms.
+      </p>
+      <blockquote class="hero-tagline">
+        “Making history readable without allowing AI to rewrite it.”
+      </blockquote>
+      <ul class="social-row">
+        <li>
+          <a href="mailto:dobeli@utu.fi" aria-label="Email" title="Email">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          </a>
+        </li>
+        <li>
+          <a href="https://www.linkedin.com/in/dorianbeli/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+          </a>
+        </li>
+        <li>
+          <a href="https://github.com/LordBayron94" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+            <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          </a>
+        </li>
+        <li>
+          <a href="assets/DorianBeli-CV.pdf" download aria-label="Download CV (PDF)" title="Download CV (PDF)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          </a>
+        </li>
+      </ul>
     </div>
   </header>
 
@@ -63,24 +78,36 @@
     <section id="about">
       <h2>About</h2>
       <p>
-        I am a <strong>Data Engineer</strong> with a multifaceted skill set encompassing the
-        <strong>end-to-end data lifecycle</strong>. I am experienced with on-premise and
-        <strong>AWS cloud architecture</strong>, and interested in applying that knowledge in
-        <strong>hybrid architectures</strong>.
+        I am a <strong>doctoral researcher at the Department of Computing, University of
+        Turku</strong>, researching <strong>context-aware OCR and handwritten text recognition (HTR)
+        for historical documents</strong> — using vision-language models to read archival material
+        faithfully, transparently and reproducibly, while staying accountable to visual evidence,
+        document structure and historical context.
       </p>
       <p>
-        I am proficient in developing, integrating, testing and troubleshooting solutions, and my
-        competencies in <strong>DevOps practices</strong> — CI/CD integrations and Linux command-line
-        work — ensure seamless and efficient operations.
+        I came to research from industry: several years as a <strong>data engineer</strong> with a
+        multifaceted skill set encompassing the <strong>end-to-end data lifecycle</strong> — on-premise
+        and <strong>AWS cloud architecture</strong>, hybrid architectures, and <strong>DevOps
+        practices</strong> such as CI/CD integrations and Linux command-line work. I am proficient in
+        developing, integrating, testing and troubleshooting data solutions.
       </p>
       <p>
-        Alongside my engineering work, I am a <strong>doctoral researcher at the University of
-        Turku</strong>, Department of Computing, researching <strong>context-aware OCR and handwritten
-        text recognition (HTR) for historical documents</strong> — using vision-language models to
-        read archival material faithfully while staying accountable to visual evidence, document
-        structure and historical context. It continues a thread that runs through my work: from an
-        industrial OCR pipeline built at TU Graz to a master's thesis on NLP-based text summarization.
+        The research continues a thread that runs through my career: from an industrial OCR pipeline
+        built at TU Graz to a master's thesis on NLP-based text summarization.
       </p>
+    </section>
+
+    <section id="news">
+      <h2>News</h2>
+      <ul class="news-list">
+        <li><span class="news-date">2026</span> Current research: teaching vision-language models to
+          read historical documents in context — moving from line-level transcription towards page-
+          and document-level understanding of archival records, with outputs evaluated against visual
+          evidence, document structure and historical fidelity so that hallucinations and
+          over-corrections become visible instead of hidden.</li>
+        <li><span class="news-date">Jan 2026</span> Started as a doctoral researcher at the Department
+          of Computing, University of Turku.</li>
+      </ul>
     </section>
 
     <section id="experience">
@@ -88,8 +115,22 @@
       <ol class="timeline">
 
         <li>
+          <h3>Doctoral Researcher <span class="where">University of Turku — Department of Computing</span></h3>
+          <p class="when">Jan 2026 – Present · Turku, Finland</p>
+          <ul>
+            <li>Doctoral research on context-aware OCR and handwritten text recognition (HTR) for historical documents using vision-language models.</li>
+            <li>Advancing from line-level transcription towards page- and document-level understanding of archival records — layout, neighbouring entries, handwriting styles and record-level conventions.</li>
+            <li>Evaluating model outputs against visual evidence, document structure and historical fidelity, making hallucinations, over-corrections and reading-order failures measurable.</li>
+            <li>Large-scale model training and evaluation on CSC's Mahti supercomputer.</li>
+          </ul>
+          <ul class="chips role-chips">
+            <li>Vision-Language Models</li><li>OCR / HTR</li><li>NLP</li><li>Python</li><li>HPC (CSC Mahti)</li>
+          </ul>
+        </li>
+
+        <li>
           <h3>Data Engineer <span class="where">Q Agency Ltd.</span></h3>
-          <p class="when">Apr 2024 – Present</p>
+          <p class="when">Apr 2024 – Jan 2026</p>
           <ul>
             <li>Full cross-account data pipeline and architecture design and integration, including VPC Endpoint configuration for AWS services.</li>
             <li>Permission and security configuration for cross-account communication, role assumption and data exchange through VPC; managed user permissions with IAM and S3 policies.</li>
@@ -244,6 +285,13 @@
     <section id="education">
       <h2>Education</h2>
       <ol class="timeline">
+        <li>
+          <h3>Doctoral Studies in Computing <span class="where">University of Turku</span></h3>
+          <p class="when">2026 – present · Finland</p>
+          <ul>
+            <li>PhD research on context-aware OCR/HTR for historical documents with vision-language models.</li>
+          </ul>
+        </li>
         <li>
           <h3>Master's Degree in Informatics <span class="where">Faculty of Informatics and Digital Technologies, Rijeka</span></h3>
           <p class="when">2018 – 2021 · Croatia</p>
