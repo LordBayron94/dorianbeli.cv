@@ -57,14 +57,18 @@ abbr { text-decoration: none; }
   gap: 1rem;
 }
 .nav-brand {
-  font-family: var(--serif);
-  font-weight: 700;
-  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   text-decoration: none;
   color: #fff;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
-  transition: color 0.3s ease, text-shadow 0.3s ease;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35));
+  transition: color 0.3s ease, background 0.2s ease;
 }
+.nav-brand:hover { color: #fff; background: rgba(255, 255, 255, 0.14); }
 #nav-links {
   display: flex;
   gap: 0.25rem;
@@ -90,7 +94,8 @@ abbr { text-decoration: none; }
   backdrop-filter: blur(8px);
   border-color: var(--line);
 }
-#navbar.scrolled .nav-brand { color: var(--green-deep); text-shadow: none; }
+#navbar.scrolled .nav-brand { color: var(--green-deep); filter: none; }
+#navbar.scrolled .nav-brand:hover { color: var(--green-deep); background: var(--paper-deep); }
 #navbar.scrolled #nav-links a { color: var(--ink-soft); text-shadow: none; }
 #navbar.scrolled #nav-links a:hover { color: var(--green-deep); background: var(--paper-deep); }
 #navbar.scrolled #nav-links a.active { color: #fff; background: var(--green); }
@@ -553,6 +558,46 @@ html.js .timeline.tracked::after {
 }
 .video-thumb:hover .video-play { background: rgba(0, 0, 0, 0.45); }
 
+.project-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  padding: 0;
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Back-to-top button */
+#to-top {
+  position: fixed;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  z-index: 18;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(14, 63, 55, 0.3);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.15s ease;
+}
+#to-top.show {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+#to-top:hover { background: var(--green-deep); }
+
 /* Certifications */
 .cert-list {
   list-style: none;
@@ -645,11 +690,12 @@ footer {
   html.js .side { opacity: 1; transform: none; transition: none; pointer-events: auto; }
   .xp-badge { transition: none; }
   .social-row a { transition: none; }
+  #to-top { transition: none; }
 }
 
 /* ————— Print: the page doubles as a paper CV ————— */
 @media print {
-  #navbar, #nav-toggle, .side, .xp-rail, .video-slot { display: none; }
+  #navbar, #nav-toggle, .side, .xp-rail, .video-slot, #to-top { display: none; }
   body { background: #fff; font-size: 11pt; }
   .hero { min-height: auto; background: #fff; }
   .hero-bg, .hero-shade { display: none; }

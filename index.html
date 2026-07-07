@@ -18,7 +18,9 @@
 
   <nav id="navbar" aria-label="Main navigation">
     <div class="nav-inner">
-      <a href="#top" class="nav-brand">Dorian Beli</a>
+      <a href="#top" class="nav-brand" aria-label="Home" title="Home">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      </a>
       <button id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
       <ul id="nav-links">
         <li><a href="#about">About</a></li>
@@ -271,6 +273,16 @@
         </article>
 
         <article class="card project">
+          <h3>AWS Data Platform &amp; Analytics <span class="card-meta">2024 – 2026</span></h3>
+          <p>
+            Cross-account data warehouse and reporting platform on AWS at Q Agency — S3, Lambda and
+            Step Functions pipelines, IAM/VPC security design and Amazon QuickSight analytics used
+            daily by stakeholders.
+          </p>
+          <div class="video-slot" data-yt=""></div>
+        </article>
+
+        <article class="card project">
           <h3>Machine Learning for Education <span class="card-meta">2021 – 2024</span></h3>
           <p>
             Implementation and deployment of a machine learning system used as a tool for improving
@@ -281,23 +293,29 @@
         </article>
 
         <article class="card project">
-          <h3>Industrial OCR Pipeline <span class="card-meta">2019 – 2020</span></h3>
+          <h3>Digital Recognition of Aerospace Components <span class="card-meta">2019 – 2020</span></h3>
           <p>
-            OCR prototype built with Python and OpenCV at TU Graz for high-accuracy serial-number
-            extraction in industrial environments — automated manufacturing data capture and
-            real-time part traceability.
+            OCR of stamped serial numbers: a prototype built with Python and OpenCV at TU Graz
+            (Institute of Innovation and Industrial Management) for high-accuracy identification of
+            aerospace components in industrial environments — automated manufacturing data capture
+            and real-time part traceability. Final presentation of team Identification International.
           </p>
-          <div class="video-slot" data-yt=""></div>
+          <div class="video-slot" data-yt="bsRnhPgxn4E"></div>
         </article>
 
         <article class="card project">
-          <h3>AWS Data Platform &amp; Analytics <span class="card-meta">2024 – 2026</span></h3>
+          <h3>YourJob <span class="card-meta">2016</span></h3>
           <p>
-            Cross-account data warehouse and reporting platform on AWS at Q Agency — S3, Lambda and
-            Step Functions pipelines, IAM/VPC security design and Amazon QuickSight analytics used
-            daily by stakeholders.
+            Co-founded web portal connecting students with employers through educational
+            institutions — students gain real project experience and income during their studies,
+            while employers reach young, creative talent. Developed in the 6th generation of the
+            Startup Incubator Rijeka and presented at its Demo Day.
           </p>
-          <div class="video-slot" data-yt=""></div>
+          <ul class="project-links">
+            <li><a href="https://startup.rijeka.hr/timovi" target="_blank" rel="noopener">Startup Incubator Rijeka</a></li>
+            <li><a href="https://www.mojarijeka.hr/odrzan-demo-dan-6-generacije-korisnika-startup-inkubatora-rijeka/" target="_blank" rel="noopener">Demo Day coverage</a></li>
+          </ul>
+          <div class="video-slot" data-yt="D9NJj2d2SME"></div>
         </article>
 
       </div>
@@ -445,6 +463,10 @@
     <p>© 2026 Dorian Beli · Built with plain HTML &amp; CSS · Hosted on GitHub Pages</p>
   </footer>
 
+  <button id="to-top" aria-label="Back to top" title="Back to top">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+  </button>
+
   <script>
     document.documentElement.classList.add('js');
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -466,20 +488,45 @@
     links.querySelectorAll('a').forEach(a =>
       a.addEventListener('click', () => links.classList.remove('open')));
 
-    // Highlight the section currently in view
+    // Scrollspy: highlight the section currently in view.
+    // Scroll-position based (not IntersectionObserver) so short sections
+    // like Contact highlight correctly, including at the very bottom.
     const navAnchors = [...links.querySelectorAll('a')];
-    const sections = navAnchors
+    const spySections = navAnchors
       .map(a => document.querySelector(a.getAttribute('href')))
       .filter(Boolean);
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting) {
-          navAnchors.forEach(a =>
-            a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
-        }
-      });
-    }, { rootMargin: '-40% 0px -55% 0px' });
-    sections.forEach(s => observer.observe(s));
+    const spy = () => {
+      const line = window.innerHeight * 0.35;
+      let activeId = null;
+      for (const s of spySections) {
+        if (s.getBoundingClientRect().top <= line) activeId = s.id;
+      }
+      if (window.scrollY + window.innerHeight >=
+          document.documentElement.scrollHeight - 2) {
+        activeId = spySections[spySections.length - 1].id;
+      }
+      navAnchors.forEach(a =>
+        a.classList.toggle('active', a.getAttribute('href') === '#' + activeId));
+    };
+    let spyTick = false;
+    const onSpy = () => {
+      if (!spyTick) {
+        spyTick = true;
+        requestAnimationFrame(() => { spyTick = false; spy(); });
+      }
+    };
+    window.addEventListener('scroll', onSpy, { passive: true });
+    window.addEventListener('resize', onSpy);
+    spy();
+
+    // Back-to-top button
+    const toTop = document.getElementById('to-top');
+    const onTopBtn = () =>
+      toTop.classList.toggle('show', window.scrollY > window.innerHeight * 0.8);
+    window.addEventListener('scroll', onTopBtn, { passive: true });
+    onTopBtn();
+    toTop.addEventListener('click', () =>
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
 
     // Dock the photo panel to the left once the hero scrolls away
     const side = document.getElementById('side');
