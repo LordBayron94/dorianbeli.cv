@@ -35,6 +35,14 @@
     </div>
   </nav>
 
+  <div id="scroll-hint" aria-hidden="true">
+    <span class="sh-label">Scroll</span>
+    <span class="sh-chevrons">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="margin-top:-12px"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+    </span>
+  </div>
+
   <!-- Full-screen photo hero. Text sits on a gradient that fades to black at the bottom. -->
   <header id="top" class="hero">
     <img class="hero-bg" src="assets/photo.jpg" alt="" fetchpriority="high"
@@ -269,7 +277,6 @@
             context — page layout, neighbouring entries and record conventions — with outputs
             evaluated against visual evidence and historical fidelity.
           </p>
-          <div class="video-slot" data-yt=""></div>
         </article>
 
         <article class="card project">
@@ -279,7 +286,6 @@
             Step Functions pipelines, IAM/VPC security design and Amazon QuickSight analytics used
             daily by stakeholders.
           </p>
-          <div class="video-slot" data-yt=""></div>
         </article>
 
         <article class="card project">
@@ -289,7 +295,6 @@
             the educational system — containerised delivery, big-data pipelines and API integration
             on a Cloudera platform at Multicom.
           </p>
-          <div class="video-slot" data-yt=""></div>
         </article>
 
         <article class="card project">
@@ -404,24 +409,33 @@
           </div>
         </div>
       <ol class="timeline tracked">
-        <li data-m="Jan" data-y="2026">
-          <h3>Doctoral Studies in Computing <span class="where">University of Turku</span></h3>
-          <p class="when">2026 – present · Finland</p>
-          <ul>
-            <li>PhD research on context-aware OCR/HTR for historical documents with vision-language models.</li>
-          </ul>
+        <li data-m="Jan" data-y="2026" class="has-media">
+          <img class="edu-media" src="assets/edu-utu.jpg" alt="University of Turku campus" loading="lazy">
+          <div class="edu-body">
+            <h3>Doctoral Studies in Computing <span class="where">University of Turku</span></h3>
+            <p class="when">2026 – present · Finland</p>
+            <ul>
+              <li>PhD research on context-aware OCR/HTR for historical documents with vision-language models.</li>
+            </ul>
+          </div>
         </li>
-        <li data-m="" data-y="2018">
-          <h3>Master's Degree in Informatics <span class="where">Faculty of Informatics and Digital Technologies, Rijeka</span></h3>
-          <p class="when">2018 – 2021 · Croatia</p>
+        <li data-m="" data-y="2018" class="has-media">
+          <img class="edu-media" src="assets/edu-rijeka.jpg" alt="University of Rijeka campus" loading="lazy">
+          <div class="edu-body">
+            <h3>Master's Degree in Informatics <span class="where">Faculty of Informatics and Digital Technologies, Rijeka</span></h3>
+            <p class="when">2018 – 2021 · Croatia</p>
+          </div>
         </li>
         <li data-m="" data-y="2019">
           <h3>Erasmus+ Exchange Programme <span class="where">Technische Universität Graz</span></h3>
           <p class="when">2019 – 2020 · Austria</p>
         </li>
-        <li data-m="" data-y="2013">
-          <h3>Bachelor's Degree in Informatics <span class="where">Faculty of Informatics and Digital Technologies, Rijeka</span></h3>
-          <p class="when">2013 – 2018 · Croatia</p>
+        <li data-m="" data-y="2013" class="has-media">
+          <img class="edu-media" src="assets/edu-rijeka.jpg" alt="University of Rijeka campus" loading="lazy">
+          <div class="edu-body">
+            <h3>Bachelor's Degree in Informatics <span class="where">Faculty of Informatics and Digital Technologies, Rijeka</span></h3>
+            <p class="when">2013 – 2018 · Croatia</p>
+          </div>
         </li>
       </ol>
       </div>
@@ -495,6 +509,8 @@
     const spySections = navAnchors
       .map(a => document.querySelector(a.getAttribute('href')))
       .filter(Boolean);
+    const scrollHint = document.getElementById('scroll-hint');
+    const aboutSec = document.getElementById('about');
     const spy = () => {
       const line = window.innerHeight * 0.35;
       let activeId = null;
@@ -507,6 +523,9 @@
       }
       navAnchors.forEach(a =>
         a.classList.toggle('active', a.getAttribute('href') === '#' + activeId));
+      // Scroll-down hint: gone as soon as About enters the viewport
+      scrollHint.classList.toggle(
+        'hide', aboutSec.getBoundingClientRect().top < window.innerHeight);
     };
     let spyTick = false;
     const onSpy = () => {
@@ -527,6 +546,42 @@
     onTopBtn();
     toTop.addEventListener('click', () =>
       window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
+
+    // Hero sweeps left as you scroll (tablets and up), so the whole
+    // opening section visibly moves aside while the panel docks in.
+    const layoutEl = document.querySelector('.layout');
+    const heroSection = document.querySelector('.hero');
+    const sweepOn = () => window.innerWidth >= 768 && !reduceMotion;
+    let sweepTick = false;
+    const sweep = () => {
+      sweepTick = false;
+      if (!sweepOn()) { heroSection.style.transform = ''; return; }
+      const p = Math.min(1, Math.max(0, window.scrollY / (heroSection.offsetHeight * 0.85)));
+      heroSection.style.transform = p > 0
+        ? 'translateX(' + (-46 * p).toFixed(2) + 'vw)'
+        : '';
+    };
+    const onSweep = () => {
+      if (!sweepTick) { sweepTick = true; requestAnimationFrame(sweep); }
+    };
+    window.addEventListener('scroll', onSweep, { passive: true });
+    window.addEventListener('resize', onSweep);
+    sweep();
+
+    // One scroll gesture is enough: the first wheel-down in the hero
+    // glides straight to the content, completing the move-left in one go.
+    let assisting = false;
+    window.addEventListener('wheel', e => {
+      if (!sweepOn()) return;
+      if (assisting) { if (e.deltaY > 0) e.preventDefault(); return; }
+      if (e.deltaY > 0 && window.scrollY < window.innerHeight * 0.6) {
+        e.preventDefault();
+        assisting = true;
+        const top = layoutEl.getBoundingClientRect().top + window.scrollY - 8;
+        window.scrollTo({ top, behavior: 'smooth' });
+        setTimeout(() => { assisting = false; }, 950);
+      }
+    }, { passive: false });
 
     // Dock the photo panel to the left once the hero scrolls away
     const side = document.getElementById('side');
@@ -606,10 +661,7 @@
     // Project videos: click-to-load YouTube embeds; empty slots show a placeholder
     document.querySelectorAll('.video-slot').forEach(slot => {
       const id = (slot.dataset.yt || '').trim();
-      if (!id) {
-        slot.innerHTML = '<div class="video-placeholder"><span aria-hidden="true">▶</span> Video coming soon</div>';
-        return;
-      }
+      if (!id) { slot.remove(); return; }
       const btn = document.createElement('button');
       btn.className = 'video-thumb';
       btn.setAttribute('aria-label', 'Play project video');
