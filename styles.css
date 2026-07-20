@@ -77,18 +77,44 @@ abbr { text-decoration: none; }
   padding: 0;
 }
 #nav-links a {
+  position: relative;
   display: block;
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
+  padding: 0.45rem 0.8rem 0.5rem;
+  border-radius: 8px 8px 0 0;
   text-decoration: none;
   color: rgba(255, 255, 255, 0.88);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
   font-size: 0.95rem;
   font-weight: 500;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition: color 0.25s ease, background 0.3s ease, text-shadow 0.3s ease;
 }
-#nav-links a:hover { color: #fff; background: rgba(255, 255, 255, 0.14); }
-#nav-links a.active { color: #fff; background: var(--green); text-shadow: none; }
+/* Thin line under each item + a glow rising from the bottom on hover */
+#nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 0;
+  height: 1.5px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 9px rgba(255, 255, 255, 0.85), 0 0 20px rgba(255, 255, 255, 0.4);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+#nav-links a:hover:not(.active) {
+  color: #fff;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0.07) 55%,
+    transparent 85%
+  );
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.65);
+}
+#nav-links a:hover:not(.active)::after { transform: scaleX(1); }
+#nav-links a.active { color: #fff; background: var(--green); border-radius: 999px; text-shadow: none; }
+#nav-links a.active::after { display: none; }
 #navbar.scrolled {
   background: rgba(250, 247, 242, 0.92);
   backdrop-filter: blur(8px);
@@ -97,7 +123,20 @@ abbr { text-decoration: none; }
 #navbar.scrolled .nav-brand { color: var(--green-deep); filter: none; }
 #navbar.scrolled .nav-brand:hover { color: var(--green-deep); background: var(--paper-deep); }
 #navbar.scrolled #nav-links a { color: var(--ink-soft); text-shadow: none; }
-#navbar.scrolled #nav-links a:hover { color: var(--green-deep); background: var(--paper-deep); }
+#navbar.scrolled #nav-links a::after {
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(20, 85, 74, 0.5);
+}
+#navbar.scrolled #nav-links a:hover:not(.active) {
+  color: var(--green-deep);
+  background: linear-gradient(
+    to top,
+    rgba(20, 85, 74, 0.16),
+    rgba(20, 85, 74, 0.04) 55%,
+    transparent 85%
+  );
+  text-shadow: 0 0 10px rgba(20, 85, 74, 0.3);
+}
 #navbar.scrolled #nav-links a.active { color: #fff; background: var(--green); }
 #nav-toggle {
   display: none;
@@ -152,13 +191,17 @@ abbr { text-decoration: none; }
   display: flex;
   align-items: flex-end;
   background: var(--green-deep); /* fallback if the photo fails to load */
-  will-change: transform;
+  will-change: transform, opacity;
+  transition: transform 0.85s cubic-bezier(0.6, 0.05, 0.25, 1),
+              opacity 0.55s ease 0.3s;
 }
-/* One swipe settles on the content: gentle snap assist on touch devices */
+.hero.swept { transform: translateX(-60vw) scale(0.92); opacity: 0; }
+@media (max-width: 767px) {
+  .hero { transition: none; }
+  .hero.swept { transform: none; opacity: 1; }
+}
 @media (min-width: 768px) {
-  html { scroll-snap-type: y proximity; }
-  .hero { scroll-snap-align: start; }
-  .layout { scroll-snap-align: start; }
+  .layout { scroll-margin-top: 76px; }
 }
 .hero-bg {
   position: absolute;
@@ -352,7 +395,7 @@ html.js .side.docked {
 
 /* ————— Sections ————— */
 main { max-width: var(--max); margin: 0 auto; padding: 0 1.25rem; }
-section { padding: 3rem 0 0.5rem; scroll-margin-top: 72px; }
+section { padding: 3rem 0 0.5rem; scroll-margin-top: 92px; }
 section h2 {
   font-size: 1.9rem;
   margin: 0 0 0.4rem;
@@ -753,13 +796,15 @@ footer {
   .social-row a { transition: none; }
   #to-top { transition: none; }
   .sh-chevrons { animation: none; }
-  html { scroll-snap-type: none; }
+  .hero { transition: none; }
+  .hero.swept { transform: none; opacity: 1; }
+  #nav-links a, #nav-links a::after { transition: none; }
 }
 
 /* ————— Print: the page doubles as a paper CV ————— */
 @media print {
   #navbar, #nav-toggle, .side, .xp-rail, .video-slot, #to-top, #scroll-hint { display: none; }
-  .hero { transform: none !important; }
+  .hero { transform: none !important; opacity: 1 !important; }
   body { background: #fff; font-size: 11pt; }
   .hero { min-height: auto; background: #fff; }
   .hero-bg, .hero-shade { display: none; }

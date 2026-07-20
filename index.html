@@ -547,48 +547,67 @@
     toTop.addEventListener('click', () =>
       window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
 
-    // Hero sweeps left as you scroll (tablets and up), so the whole
-    // opening section visibly moves aside while the panel docks in.
+    // Hero sweep is all-or-nothing: the tiniest downward move plays the
+    // FULL transition (hero flies to the left corner while the content
+    // glides up under it). The page never rests part-way between the
+    // hero and the content — wheel, scrollbar, touch or keyboard.
     const layoutEl = document.querySelector('.layout');
     const heroSection = document.querySelector('.hero');
-    const sweepOn = () => window.innerWidth >= 768 && !reduceMotion;
-    let sweepTick = false;
-    const sweep = () => {
-      sweepTick = false;
-      if (!sweepOn()) { heroSection.style.transform = ''; return; }
-      const p = Math.min(1, Math.max(0, window.scrollY / (heroSection.offsetHeight * 0.85)));
-      heroSection.style.transform = p > 0
-        ? 'translateX(' + (-46 * p).toFixed(2) + 'vw)'
-        : '';
-    };
-    const onSweep = () => {
-      if (!sweepTick) { sweepTick = true; requestAnimationFrame(sweep); }
-    };
-    window.addEventListener('scroll', onSweep, { passive: true });
-    window.addEventListener('resize', onSweep);
-    sweep();
+    const side = document.getElementById('side');
+    const NAV_OFFSET = 76;
+    const sweepOn = () => window.innerWidth >= 768;
+    const layoutTop = () =>
+      layoutEl.getBoundingClientRect().top + window.scrollY - NAV_OFFSET;
 
-    // One scroll gesture is enough: the first wheel-down in the hero
-    // glides straight to the content, completing the move-left in one go.
-    let assisting = false;
+    let gliding = false, glideTarget = -1, lastY = window.scrollY;
+    const setSwept = on => {
+      heroSection.classList.toggle('swept', on);
+      side.classList.toggle('docked', on);
+    };
+    const glideTo = top => {
+      gliding = true;
+      glideTarget = top;
+      window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
+    };
+    const sweepDown = () => { setSwept(true); glideTo(layoutTop()); };
+    const sweepUp = () => { setSwept(false); glideTo(0); };
+
     window.addEventListener('wheel', e => {
       if (!sweepOn()) return;
-      if (assisting) { if (e.deltaY > 0) e.preventDefault(); return; }
-      if (e.deltaY > 0 && window.scrollY < window.innerHeight * 0.6) {
+      const zoneEnd = layoutTop();
+      if (e.deltaY > 0 && window.scrollY < zoneEnd - 4) {
         e.preventDefault();
-        assisting = true;
-        const top = layoutEl.getBoundingClientRect().top + window.scrollY - 8;
-        window.scrollTo({ top, behavior: 'smooth' });
-        setTimeout(() => { assisting = false; }, 950);
+        if (!gliding || glideTarget !== zoneEnd) sweepDown();
+      } else if (e.deltaY < 0 && window.scrollY > 0 && window.scrollY <= zoneEnd + 4) {
+        e.preventDefault();
+        if (!gliding || glideTarget !== 0) sweepUp();
       }
     }, { passive: false });
 
-    // Dock the photo panel to the left once the hero scrolls away
-    const side = document.getElementById('side');
-    const heroEl = document.getElementById('top');
-    new IntersectionObserver(([e]) => {
-      side.classList.toggle('docked', e.intersectionRatio < 0.15);
-    }, { threshold: [0, 0.15, 0.5] }).observe(heroEl);
+    const onSweepScroll = () => {
+      const y = window.scrollY;
+      if (!sweepOn()) {
+        // Phones: no left transition, panel stays hidden
+        setSwept(y > 4);
+        lastY = y;
+        return;
+      }
+      const zoneEnd = layoutTop();
+      if (gliding && Math.abs(y - glideTarget) < 4) gliding = false;
+      if (y >= zoneEnd - 4) {
+        setSwept(true);
+      } else if (y <= 4) {
+        setSwept(false);
+      } else if (!gliding) {
+        // Landed inside the forbidden zone (scrollbar drag, touch,
+        // PageDown…): finish the move in the direction of travel.
+        (y > lastY ? sweepDown : sweepUp)();
+      }
+      lastY = y;
+    };
+    window.addEventListener('scroll', onSweepScroll, { passive: true });
+    window.addEventListener('resize', onSweepScroll);
+    onSweepScroll();
 
     // Slide-in reveals: sections and individual timeline entries
     const revealEls = [...document.querySelectorAll('main > section, .timeline > li')];
