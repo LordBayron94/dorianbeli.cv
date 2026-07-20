@@ -113,8 +113,18 @@ abbr { text-decoration: none; }
   text-shadow: 0 0 14px rgba(255, 255, 255, 0.65);
 }
 #nav-links a:hover:not(.active)::after { transform: scaleX(1); }
-#nav-links a.active { color: #fff; background: var(--green); border-radius: 999px; text-shadow: none; }
-#nav-links a.active::after { display: none; }
+/* Active item wears the same shape as the hover state, held */
+#nav-links a.active {
+  color: #fff;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0.07) 55%,
+    transparent 85%
+  );
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.65);
+}
+#nav-links a.active::after { transform: scaleX(1); }
 #navbar.scrolled {
   background: rgba(250, 247, 242, 0.92);
   backdrop-filter: blur(8px);
@@ -137,7 +147,16 @@ abbr { text-decoration: none; }
   );
   text-shadow: 0 0 10px rgba(20, 85, 74, 0.3);
 }
-#navbar.scrolled #nav-links a.active { color: #fff; background: var(--green); }
+#navbar.scrolled #nav-links a.active {
+  color: var(--green-deep);
+  background: linear-gradient(
+    to top,
+    rgba(20, 85, 74, 0.16),
+    rgba(20, 85, 74, 0.04) 55%,
+    transparent 85%
+  );
+  text-shadow: 0 0 10px rgba(20, 85, 74, 0.3);
+}
 #nav-toggle {
   display: none;
   font-size: 1.4rem;
@@ -210,13 +229,25 @@ abbr { text-decoration: none; }
 @media (min-width: 768px) {
   .layout { scroll-margin-top: 76px; }
 }
-.hero-bg {
+/* Blurred ambient copy fills the edges; the sharp photo sits on top,
+   fully visible (contain) so nothing of it is cropped away. */
+.hero-backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 22%; /* keep the face in view */
+  object-position: 50% 22%;
+  filter: blur(28px) brightness(0.72) saturate(1.05);
+  transform: scale(1.1); /* hide blurred edge fringing */
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 45%;
 }
 .hero-shade {
   position: absolute;
@@ -791,7 +822,15 @@ footer {
   #nav-links.open { display: flex; }
   #nav-links.open a { color: var(--ink-soft); text-shadow: none; }
   #nav-links.open a:hover { color: var(--green-deep); background: var(--paper-deep); }
-  #nav-links.open a.active { color: #fff; background: var(--green); }
+  #nav-links.open a.active {
+    color: var(--green-deep);
+    background: linear-gradient(
+      to top,
+      rgba(20, 85, 74, 0.16),
+      rgba(20, 85, 74, 0.04) 55%,
+      transparent 85%
+    );
+  }
 }
 @media (max-width: 760px) {
   .hero-inner { padding-bottom: 2.25rem; }
@@ -817,7 +856,7 @@ footer {
   .hero { transform: none !important; opacity: 1 !important; visibility: visible !important; }
   body { background: #fff; font-size: 11pt; }
   .hero { min-height: auto; background: #fff; }
-  .hero-bg, .hero-shade { display: none; }
+  .hero-bg, .hero-backdrop, .hero-shade { display: none; }
   .hero-inner { color: var(--ink); padding: 0.5rem 0; }
   .hero h1 { color: var(--green-deep); text-shadow: none; }
   .hero-kicker, .hero-sub, .hero-tagline { color: var(--ink); text-shadow: none; }

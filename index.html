@@ -45,6 +45,8 @@
 
   <!-- Full-screen photo hero. Text sits on a gradient that fades to black at the bottom. -->
   <header id="top" class="hero">
+    <img class="hero-backdrop" src="assets/photo.jpg" alt="" aria-hidden="true"
+         onerror="this.style.display='none'">
     <img class="hero-bg" src="assets/photo.jpg" alt="" fetchpriority="high"
          onerror="this.style.display='none'">
     <div class="hero-shade" aria-hidden="true"></div>
@@ -608,6 +610,22 @@
     window.addEventListener('scroll', onSweepScroll, { passive: true });
     window.addEventListener('resize', onSweepScroll);
     onSweepScroll();
+
+    // Anchor links glide through the sweep state machine — otherwise
+    // the hero zone correction hijacks nav jumps on larger screens.
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (!target) return;
+        e.preventDefault();
+        const isTop = target.id === 'top';
+        if (sweepOn()) setSwept(!isTop);
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        const y = isTop ? 0 : Math.min(max,
+          target.getBoundingClientRect().top + window.scrollY - 92);
+        glideTo(y);
+      });
+    });
 
     // Slide-in reveals: sections and individual timeline entries
     const revealEls = [...document.querySelectorAll('main > section, .timeline > li')];
