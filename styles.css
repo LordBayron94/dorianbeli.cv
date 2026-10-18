@@ -818,17 +818,18 @@ html.js .timeline.tracked::after {
 
 /* Contact */
 .contact-loc { color: var(--ink-soft); }
-
-/* Footer */
-footer {
-  margin-top: 3.5rem;
-  padding: 2rem 1.25rem 2.5rem;
+/* The copyright line closes the Contact screen under a thin divider, so the
+   page ends with Contact and the photo card always reaches the screen bottom */
+#contact { display: flex; flex-direction: column; }
+#contact > h2 { margin-bottom: 0; }   /* flex items don't collapse margins: same gap as before */
+.contact-foot {
+  margin-top: auto;
+  padding: 1.1rem 0 1.25rem;
   border-top: 1px solid var(--line);
-  background: var(--paper-deep);
-  text-align: center;
   font-size: 0.85rem;
   color: var(--ink-soft);
 }
+.contact-foot p { margin: 0; padding-right: 3.5rem; }   /* clear of the back-to-top button */
 .eu-ack { max-width: 46em; margin: 0 auto 0.75rem; }
 
 /* ————— Mobile ————— */
