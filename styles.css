@@ -25,6 +25,10 @@ html { scroll-behavior: smooth; overflow-x: clip; }
 
 body {
   margin: 0;
+  /* Clip sideways overflow (sections waiting to slide in) here, not only at
+     <html>: mobile browsers still count it as page width and widen the layout
+     viewport, pushing the fixed nav's menu button off the right edge */
+  overflow-x: clip;
   font-family: var(--sans);
   font-size: 17px;
   line-height: 1.65;
