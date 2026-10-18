@@ -459,6 +459,76 @@ html.js .side.docked {
 .side-social { gap: 0.55rem; }
 .side-social a { width: 38px; height: 38px; }
 
+/* ————— Home ↔ About: the hero photo itself travels into the card ————— */
+/* JS adds html.morph (wide screens, motion allowed). A fixed copy of the
+   photo glides from the hero to the card while its frame narrows to the
+   card's crop; the hero text and blur fade, then the real card takes over
+   in exactly the same spot (and the other way round on the way back). */
+@property --mfade { syntax: "<length>"; inherits: false; initial-value: 0px; }
+#photo-morph {
+  position: fixed;
+  inset: 0;
+  z-index: 12;          /* over the content, under the nav */
+  pointer-events: none;
+  display: none;
+}
+#photo-morph.on { display: block; }
+#photo-morph img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+@media (min-aspect-ratio: 960/955) {
+  #photo-morph img {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
+  }
+}
+@media (max-aspect-ratio: 960/955) {
+  #photo-morph img {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
+  }
+}
+/* The blur stays put on screen and dissolves while the photo travels */
+#photo-morph-bg {
+  position: fixed;
+  z-index: 11;
+  pointer-events: none;
+  display: none;
+}
+#photo-morph-bg.on { display: block; }
+@media (min-width: 768px) {
+  /* The hero no longer flies off. Its blur and photo are handed to the
+     copies above; its gradient and text stay over the travelling photo (as
+     over the real one) and fade */
+  html.morph .hero { will-change: auto; transition: none; }
+  html.morph .hero.swept { transform: none; opacity: 1; visibility: visible; transition: none; }
+  html.morph .hero.swept:not(.morphing) { visibility: hidden; }
+  html.morph .hero.morphing { background: transparent; }
+  html.morph .hero.morphing .hero-backdrop,
+  html.morph .hero.morphing .hero-bg { visibility: hidden; }
+  html.morph .hero-shade { z-index: 13; }
+  html.morph .hero-inner { z-index: 14; }
+  html.morph .hero-shade,
+  html.morph .hero-inner { transition: opacity 0.5s ease 0.2s; }
+  html.morph .hero.swept .hero-shade,
+  html.morph .hero.swept .hero-inner { opacity: 0; transition: opacity 0.25s ease; }
+  /* The card appears in place (the travelling photo becomes it), then its
+     gradient, name and icons fade in */
+  html.morph .side { transform: none; transition: opacity 0.25s ease; }
+  html.morph .side.docked { transition: none; }
+  html.morph .side.leaving { z-index: 13; }            /* its text fades over the departing photo */
+  html.morph .side.leaving .side-bg { visibility: hidden; }
+  html.morph .side-shade,
+  html.morph .side-content { opacity: 0; transition: opacity 0.45s ease; }
+  html.morph .side.landed .side-shade,
+  html.morph .side.landed .side-content { opacity: 1; }
+}
+
 /* ————— Sections ————— */
 main { max-width: none; margin: 0 auto; padding: 0 1.25rem; }
 section { padding: 3rem 0 0.5rem; scroll-margin-top: var(--nav-h); }

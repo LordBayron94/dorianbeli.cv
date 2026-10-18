@@ -573,9 +573,147 @@
       layoutEl.getBoundingClientRect().top + window.scrollY - navHeight();
 
     let gliding = false, glideTarget = -1, glideStart = 0, lastY = window.scrollY;
+    let swept = false;
     const setSwept = on => {
+      if (on === swept) return;
+      swept = on;
       heroSection.classList.toggle('swept', on);
+      if (useMorph()) { morphTo(on ? 'in' : 'out'); return; }
+      abortMorph();
       side.classList.toggle('docked', on);
+      side.classList.toggle('landed', on);
+    };
+
+    // Home ↔ About on wide screens: the hero photo itself travels into the
+    // card. A fixed copy glides from where the photo sits in the hero to the
+    // card while its frame narrows to the card's crop (the same object-fit /
+    // object-position the card uses), then the real card takes over in exactly
+    // the same spot. Start and end are measured from the page, so it fits
+    // every screen. Reversed on the way back; turning round halfway plays it
+    // back from where it is.
+    const heroBg = heroSection.querySelector('.hero-bg');
+    const sideBg = side.querySelector('.side-bg');
+    const MORPH_MS = 700;
+    const MORPH_EASE = 'cubic-bezier(0.65, 0, 0.25, 1)';
+    const canMorph = !reduceMotion && 'animate' in Element.prototype &&
+      window.CSS && CSS.supports('clip-path', 'inset(1px)');
+    if (canMorph) document.documentElement.classList.add('morph');
+    const morphLayer = document.createElement('div');
+    morphLayer.id = 'photo-morph';
+    morphLayer.setAttribute('aria-hidden', 'true');
+    const morphImg = document.createElement('img');
+    morphImg.alt = '';
+    morphLayer.appendChild(morphImg);
+    // The blur behind the hero photo, held on screen while it dissolves
+    const morphBg = document.createElement('img');
+    morphBg.id = 'photo-morph-bg';
+    morphBg.className = 'hero-backdrop';
+    morphBg.alt = '';
+    morphBg.setAttribute('aria-hidden', 'true');
+    document.body.append(morphBg, morphLayer);
+    let morph = null;   // { dir: 'in' | 'out', anims, ended, landing }
+    const useMorph = () => canMorph && sweepOn() && heroBg.naturalWidth > 0;
+
+    // The photo in the hero, in screen coordinates with the page at scroll y
+    const heroAt = y => {
+      const r = heroBg.getBoundingClientRect();
+      return { x: r.left, y: r.top + window.scrollY - y, w: r.width, h: r.height };
+    };
+    // The card: its frame, and the photo as the card crops it
+    const cardAt = () => {
+      const w = side.offsetWidth, h = side.offsetHeight, top = navHeight();
+      const nw = heroBg.naturalWidth, nh = heroBg.naturalHeight;
+      const s = Math.max(w / nw, h / nh);
+      const [px, py] = getComputedStyle(sideBg).objectPosition.split(' ').map(v => parseFloat(v) / 100);
+      const left = side.getBoundingClientRect().left;
+      return { frame: { x: left, y: top, w, h },
+               img: { x: left + (w - nw * s) * px, y: top + (h - nh * s) * py, w: nw * s, h: nh * s } };
+    };
+    // The hero photo's soft edge, in the copy's own (unscaled) pixels
+    const heroFade = r => {
+      const sides = matchMedia('(min-aspect-ratio: 960/955)').matches;
+      const px = Math.min(72, Math.max(24, 0.045 * (sides ? r.w : r.h)));
+      return px / (r.w / heroBg.naturalWidth) + 'px';
+    };
+    const clip = f => {
+      const W = morphLayer.clientWidth, H = morphLayer.clientHeight;
+      return `inset(${f.y}px ${W - f.x - f.w}px ${H - f.y - f.h}px ${f.x}px)`;
+    };
+    const place = r => `translate(${r.x}px, ${r.y}px) scale(${r.w / heroBg.naturalWidth})`;
+
+    const startMorph = dir => {
+      morphImg.src = heroBg.currentSrc || heroBg.src;
+      morphImg.style.width = heroBg.naturalWidth + 'px';
+      morphImg.style.height = heroBg.naturalHeight + 'px';
+      morphBg.src = morphImg.src;
+      morphLayer.classList.add('on');
+      morphBg.classList.add('on');
+      heroSection.classList.add('morphing');   // the copies stand in for the hero's photo and blur
+      const card = cardAt();
+      const hero = dir === 'in' ? heroAt(window.scrollY) : heroAt(0);
+      if (dir === 'out') {
+        side.classList.add('leaving');
+        side.classList.remove('docked', 'landed');
+        setTimeout(() => side.classList.remove('leaving'), 450);
+      }
+      // Keyframes run hero → card; the way back plays them in reverse. The
+      // photo's soft edge and the blur go early in the move (and return late
+      // on the way back).
+      const opts = { duration: MORPH_MS, easing: MORPH_EASE, fill: 'both',
+                     direction: dir === 'in' ? 'normal' : 'reverse' };
+      const m = { dir, ended: false, landing: false, anims: [
+        morphImg.animate([{ transform: place(hero), '--mfade': heroFade(hero) },
+                          { '--mfade': '0px', offset: 0.25 },
+                          { transform: place(card.img), '--mfade': '0px' }], opts),
+        morphLayer.animate([{ clipPath: clip(hero) }, { clipPath: clip(card.frame) }], opts),
+        morphBg.animate([{ opacity: 1 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], opts)
+      ] };
+      m.anims[0].onfinish = () => { m.ended = true; land(); };
+      morph = m;
+    };
+    const morphTo = dir => {
+      if (morph) {
+        if (morph.dir === dir || morph.landing) return;
+        morph.dir = dir;            // turned round halfway: play it back from here
+        morph.ended = false;
+        morph.anims.forEach(a => a.reverse());
+        return;
+      }
+      // Only animate what is on screen (e.g. not when the page opens mid-way)
+      const onScreen = dir === 'in'
+        ? heroBg.getBoundingClientRect().bottom > navHeight()
+        : side.classList.contains('docked');
+      if (onScreen) startMorph(dir);
+      else { side.classList.toggle('docked', dir === 'in'); side.classList.toggle('landed', dir === 'in'); }
+    };
+    // Hand over to the real element once the copy has arrived AND the page has
+    // too (the card is sticky: it is in place once About is under the nav)
+    const land = () => {
+      const m = morph;
+      if (!m || !m.ended || m.landing) return;
+      if (m.dir === 'in' && Math.abs(side.getBoundingClientRect().top - navHeight()) > 2) return;
+      if (m.dir === 'out' && window.scrollY > 4) return;
+      m.landing = true;
+      if (m.dir === 'in') side.classList.add('docked');
+      const ready = m.dir === 'in' && !sideBg.complete ? sideBg.decode().catch(() => {}) : Promise.resolve();
+      ready.then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (m.dir === 'in') side.classList.add('landed');
+        heroSection.classList.remove('morphing');
+        morphLayer.classList.remove('on');
+        morphBg.classList.remove('on');
+        m.anims.forEach(a => a.cancel());
+        morph = null;
+        if (swept !== (m.dir === 'in')) morphTo(swept ? 'in' : 'out');   // turned round while landing
+      })));
+    };
+    const abortMorph = () => {
+      if (!morph) return;
+      morph.anims.forEach(a => a.cancel());
+      morph = null;
+      heroSection.classList.remove('morphing');
+      morphLayer.classList.remove('on');
+      morphBg.classList.remove('on');
+      side.classList.remove('leaving');
     };
     const glideTo = top => {
       // Already there: no scroll event would arrive to clear `gliding`
@@ -660,7 +798,7 @@
       // Free the wheel once the glide has landed AND the wheel has gone quiet,
       // so one trackpad swipe (with its long momentum) is still one step.
       const quiet = performance.now() - lastWheelAt > 220;
-      const landed = !gliding || performance.now() - glideStart > 1600;
+      const landed = (!gliding || performance.now() - glideStart > 1600) && !morph;
       if (quiet && landed) wheelBusy = false;
       else setTimeout(releaseWheel, 60);
     };
@@ -677,12 +815,16 @@
     const onSweepScroll = () => {
       const y = window.scrollY;
       if (gliding && Math.abs(y - glideTarget) < 4) gliding = false;
+      if (morph) land();   // the photo may be waiting for the page to arrive
       if (!sweepOn()) {
         // Phones: no left transition, panel stays hidden
         setSwept(y > 4);
         lastY = y;
         return;
       }
+      // While a glide runs, the move that started it decides the state (the
+      // first frames of a glide down from the intro are still near the top)
+      if (gliding && performance.now() - glideStart < 1600) { lastY = y; return; }
       const zoneEnd = layoutTop();
       if (y >= zoneEnd - 4) {
         setSwept(true);
@@ -696,7 +838,15 @@
       lastY = y;
     };
     window.addEventListener('scroll', onSweepScroll, { passive: true });
-    window.addEventListener('resize', onSweepScroll);
+    window.addEventListener('resize', () => {
+      // The start and end were measured for the old size: jump to the end
+      if (morph) {
+        abortMorph();
+        side.classList.toggle('docked', swept);
+        side.classList.toggle('landed', swept);
+      }
+      onSweepScroll();
+    });
     onSweepScroll();
 
     // Anchor links glide through the sweep state machine — otherwise
