@@ -564,10 +564,10 @@
     const layoutEl = document.querySelector('.layout');
     const heroSection = document.querySelector('.hero');
     const side = document.getElementById('side');
-    const NAV_OFFSET = 76;
     const sweepOn = () => window.innerWidth >= 768;
+    // Content start: About (and the docked photo) right under the nav
     const layoutTop = () =>
-      layoutEl.getBoundingClientRect().top + window.scrollY - NAV_OFFSET;
+      layoutEl.getBoundingClientRect().top + window.scrollY - navHeight();
 
     let gliding = false, glideTarget = -1, glideStart = 0, lastY = window.scrollY;
     const setSwept = on => {
@@ -589,9 +589,11 @@
     // page never rests part-way. Intro ↔ About goes through the sweep; after
     // that it is section to section. A section taller than the screen is paged
     // through in equal screen-sized steps (the last one lines up with its end),
-    // so nothing is skipped and two sections never share the screen. Every stop
-    // is at or past the content start, so the watchdog can't pull a step back
-    // to the top. Touch, keyboard and scrollbar keep native scrolling.
+    // so nothing is skipped and two sections never share the screen. Dated
+    // timelines (Experience, Education) step one entry at a time instead, so
+    // every step shows the next date. Every stop is at or past the content
+    // start, so the watchdog can't pull a step back to the top. Touch, keyboard
+    // and scrollbar keep native scrolling.
     const sectionEls = [...document.querySelectorAll('main > section')];
     const STOP_TOL = 24;   // px within which the page counts as "at" a stop
     const wheelStops = () => {
@@ -599,31 +601,56 @@
       const visible = window.innerHeight - navH;
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const zone = sweepOn() ? layoutTop() : 0;
-      const stops = [];
+      const stops = [];   // { y, rail, li } in scroll order
       sectionEls.forEach(s => {
         const top = s.getBoundingClientRect().top + y;
         const start = Math.min(max, Math.max(zone, top - navH));
         const end = Math.min(max, Math.max(start, top + s.offsetHeight - window.innerHeight));
+        const r = rails.find(x => x.section === s && x.rail.offsetParent !== null);
+        if (r) {
+          // Bring each entry to where the first one sits at the section start,
+          // clamped to the section: near the end the page stops moving and only
+          // the date steps on.
+          const first = r.items[0].getBoundingClientRect().top + y;
+          r.items.forEach(li => stops.push({
+            y: Math.min(end, Math.max(start, start + li.getBoundingClientRect().top + y - first)),
+            rail: r, li
+          }));
+          const last = stops[stops.length - 1];
+          if (end > last.y + STOP_TOL) stops.push({ y: end, rail: r, li: last.li }); // content after the timeline
+          return;
+        }
         const len = end - start;
         const pages = len > STOP_TOL ? Math.ceil(len / visible) : 0;
-        for (let k = 0; k <= pages; k++) stops.push(pages ? start + (len * k) / pages : start);
+        for (let k = 0; k <= pages; k++) stops.push({ y: pages ? start + (len * k) / pages : start, rail: null, li: null });
       });
       return stops;
     };
     const wheelStep = dir => {
       const y = window.scrollY, stops = wheelStops();
-      if (dir > 0) {
-        if (y < stops[0] - STOP_TOL) {
-          if (sweepOn()) sweepDown(); else glideTo(stops[0]);
-          return;
-        }
-        const next = stops.find(s => s > y + STOP_TOL);
-        if (next !== undefined) glideTo(next);
-      } else {
-        const prev = [...stops].reverse().find(s => s < y - STOP_TOL);
-        if (prev !== undefined) glideTo(prev);
-        else if (y > 1) { if (sweepOn()) sweepUp(); else glideTo(0); }
+      if (!stops.length) return;
+      // Where are we? Several date stops can share one position, so pick the one
+      // whose entry the badge is showing.
+      let here = -1;
+      stops.forEach((s, i) => {
+        if (Math.abs(s.y - y) > STOP_TOL) return;
+        if (here < 0 || (s.rail && s.li === s.rail.shown())) here = i;
+      });
+      const inIntro = y < stops[0].y - STOP_TOL;
+      let to;
+      if (here >= 0) to = here + dir;
+      else if (inIntro) to = dir > 0 ? 0 : -1;
+      else if (dir > 0) { to = stops.findIndex(s => s.y > y + STOP_TOL); if (to < 0) to = stops.length; }
+      else { to = -1; stops.forEach((s, i) => { if (s.y < y - STOP_TOL) to = i; }); }
+      if (to >= stops.length) return;   // already at the very end
+      if (to < 0) {                     // back to the intro
+        if (y > 1) { if (sweepOn()) sweepUp(); else glideTo(0); }
+        return;
       }
+      const stop = stops[to];
+      if (inIntro && sweepOn()) setSwept(true);   // intro → About: the sweep
+      glideTo(stop.y);
+      if (stop.rail) stop.rail.pin(stop.li, stop.y);
     };
     let wheelBusy = false, lastWheelAt = 0;
     const releaseWheel = () => {
@@ -705,54 +732,83 @@
       revealEls.forEach(el => el.classList.add('reveal', 'in'));
     }
 
-    // Date rails (Experience + Education): progress line + animated month/year badge
-    const railUpdaters = [];
+    // Date rails (Experience + Education): the badge sits beside the active
+    // entry and shows its date, the line fills down to it and the dots up to it
+    // light up. Arriving at the section, the active entry is the first one
+    // (2026); each wheel step then moves to the next date (see wheelStops).
+    // Touch, keyboard and scrollbar follow the entry at the reading position —
+    // where the first entry sits when the section is at its start.
+    const rails = [];
     document.querySelectorAll('.xp-grid').forEach(grid => {
       const list = grid.querySelector('.timeline.tracked');
+      const rail = grid.querySelector('.xp-rail');
       const badge = grid.querySelector('.xp-badge');
-      if (!list || !badge) return;
+      if (!list || !rail || !badge) return;
+      const section = grid.closest('section');
       const badgeM = badge.querySelector('.xp-m');
       const badgeY = badge.querySelector('.xp-y');
       const items = [...list.children];
-      let current = null, swapTimer = null;
+      let current = null, swapTimer = null, monthH = 0;
       const setBadge = li => {
         const m = li.dataset.m || '';
         badgeM.textContent = m;
         badgeM.style.display = m ? '' : 'none';
         badgeY.textContent = li.dataset.y || '';
       };
-      railUpdaters.push(() => {
-        const rect = list.getBoundingClientRect();
-        const line = window.innerHeight * 0.45;
-        const p = Math.min(1, Math.max(0, (line - rect.top) / rect.height));
-        list.style.setProperty('--fill', (p * 100).toFixed(2) + '%');
-        let active = items[0];
-        for (const li of items) {
-          if (li.getBoundingClientRect().top <= line) active = li;
-        }
-        if (active !== current) {
-          current = active;
-          clearTimeout(swapTimer);
-          if (reduceMotion) {
+      const show = li => {
+        // Year level with the entry title (the month label sits above it)
+        if (badgeM.offsetHeight) monthH = badgeM.offsetHeight;
+        const liTop = li.getBoundingClientRect().top - rail.getBoundingClientRect().top;
+        badge.style.top = (liTop - (li.dataset.m ? monthH : 0) - 6) + 'px';
+        const lr = list.getBoundingClientRect();
+        const dot = li.getBoundingClientRect().top - lr.top + 14;
+        list.style.setProperty('--fill', Math.min(100, (dot / lr.height) * 100).toFixed(2) + '%');
+        const n = items.indexOf(li);
+        items.forEach((x, i) => x.classList.toggle('reached', i <= n));
+        if (li === current) return;
+        current = li;
+        clearTimeout(swapTimer);
+        if (reduceMotion) {
+          setBadge(current);
+        } else {
+          badge.classList.add('swap');
+          swapTimer = setTimeout(() => {
             setBadge(current);
-          } else {
-            badge.classList.add('swap');
-            swapTimer = setTimeout(() => {
-              setBadge(current);
-              badge.classList.remove('swap');
-            }, 180);
-          }
+            badge.classList.remove('swap');
+          }, 180);
         }
-      });
+      };
+      const atReadingLine = () => {
+        const readY = navHeight() + items[0].getBoundingClientRect().top - section.getBoundingClientRect().top + 2;
+        let active = items[0];
+        for (const li of items) if (li.getBoundingClientRect().top <= readY) active = li;
+        return active;
+      };
+      const r = {
+        section, rail, items,
+        pinned: null, pinnedY: 0,       // entry chosen by the wheel, held while the page rests there
+        shown: () => current,
+        update() {
+          const held = r.pinned && (Math.abs(window.scrollY - r.pinnedY) < 4 ||
+                                    (gliding && glideTarget === r.pinnedY));
+          if (!held) r.pinned = null;
+          show(r.pinned || atReadingLine());
+        },
+        pin(li, y) { r.pinned = li; r.pinnedY = y; r.update(); }
+      };
+      rails.push(r);
     });
-    if (railUpdaters.length) {
+    if (rails.length) {
       let ticking = false;
-      const runRails = () => { ticking = false; railUpdaters.forEach(fn => fn()); };
+      const runRails = () => { ticking = false; rails.forEach(r => r.update()); };
       const onScroll = () => {
         if (!ticking) { ticking = true; requestAnimationFrame(runRails); }
       };
       window.addEventListener('scroll', onScroll, { passive: true });
       window.addEventListener('resize', onScroll);
+      // Late layout shifts (campus photos, web fonts) move the entries
+      document.querySelectorAll('.xp-grid img').forEach(img => img.addEventListener('load', onScroll));
+      if (document.fonts) document.fonts.ready.then(onScroll);
       runRails();
     }
 

@@ -242,13 +242,30 @@ abbr { text-decoration: none; }
   filter: blur(28px) brightness(0.72) saturate(1.05);
   transform: scale(1.1); /* hide blurred edge fringing */
 }
+/* The sharp photo is sized to the picture itself — as large as fits, never
+   cropped — so its edges can fade softly into the blurred backdrop. Only the
+   sides that meet the blur fade: left/right on screens wider than the photo,
+   top/bottom on taller ones. */
 .hero-bg {
+  --fade: clamp(24px, 4.5%, 72px);
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: 50% 45%;
+  left: 50%;
+  top: 45%;
+  width: min(100%, 100svh * 960 / 955);
+  height: auto;
+  transform: translate(-50%, -45%);
+}
+@media (min-aspect-ratio: 960/955) {
+  .hero-bg {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
+  }
+}
+@media (max-aspect-ratio: 960/955) {
+  .hero-bg {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
+  }
 }
 .hero-shade {
   position: absolute;
@@ -345,7 +362,7 @@ abbr { text-decoration: none; }
     gap: 1.75rem;
     max-width: none;
     margin: 0;
-    padding: 0 2rem;
+    padding: 0 2rem 0 0;
     align-items: start;
   }
   .layout main { margin: 0; padding: 0; }
@@ -354,16 +371,16 @@ abbr { text-decoration: none; }
   .layout { grid-template-columns: 340px minmax(0, 1fr); gap: 2.5rem; }
 }
 @media (min-width: 1600px) {
-  .layout { grid-template-columns: 420px minmax(0, 1fr); gap: 3rem; padding: 0 3rem; }
+  .layout { grid-template-columns: 420px minmax(0, 1fr); gap: 3rem; padding: 0 3rem 0 0; }
 }
 
+/* Edge to edge: flush with the screen's left edge, from the nav to the bottom */
 .side {
   display: none;
   position: sticky;
-  top: 76px;
-  height: min(calc(100vh - 96px), 820px);
-  min-height: 420px;
-  border-radius: 18px;
+  top: var(--nav-h);
+  height: calc(100vh - var(--nav-h));
+  height: calc(100dvh - var(--nav-h));
   overflow: hidden;
   background: var(--green-deep);
   box-shadow: 0 12px 32px rgba(14, 63, 55, 0.2);
@@ -545,7 +562,13 @@ html.js .timeline > li.in::before {
   background: var(--green);
   box-shadow: 0 0 0 4px rgba(20, 85, 74, 0.14);
 }
-/* Progress line fills as you scroll (JS sets --fill) */
+/* Dated timelines: the line fills down to the active entry and the dots up to
+   it light up (JS sets --fill and .reached) */
+html.js .timeline.tracked > li::before { background: var(--line); box-shadow: none; }
+html.js .timeline.tracked > li.reached::before {
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(20, 85, 74, 0.14);
+}
 html.js .timeline.tracked::after {
   content: "";
   position: absolute;
@@ -554,6 +577,7 @@ html.js .timeline.tracked::after {
   width: 2px;
   height: var(--fill, 0%);
   background: var(--green);
+  transition: height 0.45s cubic-bezier(0.22, 0.9, 0.3, 1);
 }
 .timeline h3 { margin: 0; font-size: 1.2rem; }
 .timeline .where {
@@ -604,7 +628,7 @@ html.js .timeline.tracked::after {
   font-weight: 600;
 }
 
-/* Date rail: sticky animated month/year badge (Experience + Education) */
+/* Date rail: month/year badge that moves beside the active entry (Experience + Education) */
 .xp-grid { display: block; }
 .xp-rail { display: none; }
 @media (min-width: 700px) {
@@ -616,11 +640,13 @@ html.js .timeline.tracked::after {
   .xp-rail { display: block; position: relative; }
 }
 .xp-badge {
-  position: sticky;
-  top: 42vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   text-align: right;
   padding-right: 0.4rem;
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease, top 0.45s cubic-bezier(0.22, 0.9, 0.3, 1);
 }
 .xp-badge.swap {
   opacity: 0;
@@ -845,6 +871,7 @@ footer {
   html.js .reveal { opacity: 1; transform: none; transition: none; }
   html.js .side { opacity: 1; transform: none; transition: none; pointer-events: auto; }
   .xp-badge { transition: none; }
+  html.js .timeline.tracked::after { transition: none; }
   .social-row a { transition: none; }
   #to-top { transition: none; }
   .sh-chevrons { animation: none; }
@@ -870,5 +897,7 @@ footer {
   .card, .chips li { box-shadow: none; }
   a { color: var(--ink); text-decoration: none; }
   html.js .reveal { opacity: 1; transform: none; }
-  html.js .timeline > li::before { background: var(--green); }
+  html.js .timeline > li::before,
+  html.js .timeline.tracked > li::before { background: var(--green); }
+  html.js .timeline.tracked::after { display: none; }
 }
