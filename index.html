@@ -494,6 +494,14 @@
     window.addEventListener('scroll', onNavScroll, { passive: true });
     onNavScroll();
 
+    // Keep the CSS --nav-h token equal to the real nav height: sections fill
+    // the screen below the nav, and nav clicks land each section right under it
+    const navHeight = () => nav.offsetHeight;
+    const syncNavH = () =>
+      document.documentElement.style.setProperty('--nav-h', navHeight() + 'px');
+    window.addEventListener('resize', syncNavH);
+    syncNavH();
+
     // Mobile nav toggle
     const toggle = document.getElementById('nav-toggle');
     const links = document.getElementById('nav-links');
@@ -621,9 +629,12 @@
         const isTop = target.id === 'top';
         if (sweepOn()) setSwept(!isTop);
         const max = document.documentElement.scrollHeight - window.innerHeight;
-        const y = isTop ? 0 : Math.min(max,
-          target.getBoundingClientRect().top + window.scrollY - 92);
-        glideTo(y);
+        // Land the section's top right under the nav so only that section is on
+        // screen. On sweep layouts never aim inside the hero→content zone: the
+        // watchdog would push the page back to the top (this is what About did).
+        let y = target.getBoundingClientRect().top + window.scrollY - navHeight();
+        if (sweepOn()) y = Math.max(layoutTop(), y);
+        glideTo(isTop ? 0 : Math.min(max, y));
       });
     });
 

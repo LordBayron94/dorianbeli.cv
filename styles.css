@@ -11,6 +11,7 @@
   --line: #ddd5c7;
   --card: #ffffff;
   --max: 880px;
+  --nav-h: 61px; /* fallback; JS keeps it equal to the real nav height */
   --serif: "Fraunces", Georgia, serif;
   --sans: "Inter", system-ui, -apple-system, sans-serif;
 }
@@ -436,7 +437,9 @@ html.js .side.docked {
 
 /* ————— Sections ————— */
 main { max-width: none; margin: 0 auto; padding: 0 1.25rem; }
-section { padding: 3rem 0 0.5rem; scroll-margin-top: 92px; }
+section { padding: 3rem 0 0.5rem; scroll-margin-top: var(--nav-h); }
+/* Every section fills the screen below the nav, so a nav click shows only that section */
+main > section { min-height: calc(100vh - var(--nav-h)); }
 section h2 {
   font-size: 1.9rem;
   margin: 0 0 0.4rem;
@@ -863,6 +866,7 @@ footer {
   .hero-tagline { background: none; border-left-color: var(--green); }
   .social-row { display: none; }
   section { padding: 0.5rem 0; }
+  main > section { min-height: 0; }
   .card, .chips li { box-shadow: none; }
   a { color: var(--ink); text-decoration: none; }
   html.js .reveal { opacity: 1; transform: none; }
