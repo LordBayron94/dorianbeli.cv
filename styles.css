@@ -357,21 +357,24 @@ abbr { text-decoration: none; }
 .layout { position: relative; }
 @media (min-width: 768px) {
   .layout {
+    --card-w: 264px;      /* photo card column, gap and right padding — also */
+    --col-gap: 1.75rem;   /* used to centre the copyright line on the screen */
+    --pad-r: 2rem;
     display: grid;
-    grid-template-columns: 264px minmax(0, 1fr);
-    gap: 1.75rem;
+    grid-template-columns: var(--card-w) minmax(0, 1fr);
+    gap: var(--col-gap);
     max-width: none;
     margin: 0;
-    padding: 0 2rem 0 0;
+    padding: 0 var(--pad-r) 0 0;
     align-items: start;
   }
   .layout main { margin: 0; padding: 0; }
 }
 @media (min-width: 1160px) {
-  .layout { grid-template-columns: 340px minmax(0, 1fr); gap: 2.5rem; }
+  .layout { --card-w: 340px; --col-gap: 2.5rem; }
 }
 @media (min-width: 1600px) {
-  .layout { grid-template-columns: 420px minmax(0, 1fr); gap: 3rem; padding: 0 3rem 0 0; }
+  .layout { --card-w: 420px; --col-gap: 3rem; --pad-r: 3rem; }
 }
 
 /* Edge to edge: flush with the screen's left edge, from the nav to the bottom */
@@ -824,12 +827,31 @@ html.js .timeline.tracked::after {
 #contact > h2 { margin-bottom: 0; }   /* flex items don't collapse margins: same gap as before */
 .contact-foot {
   margin-top: auto;
-  padding: 1.1rem 0 1.25rem;
-  border-top: 1px solid var(--line);
+  padding-bottom: 1.25rem;
   font-size: 0.85rem;
   color: var(--ink-soft);
+  text-align: center;
 }
-.contact-foot p { margin: 0; padding-right: 3.5rem; }   /* clear of the back-to-top button */
+.contact-foot p {
+  margin: 0;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+  text-wrap: balance;   /* even lines when it has to wrap */
+}
+@media (min-width: 768px) {
+  /* Centred on the whole screen, not just the column beside the photo card:
+     reach out to the full width (card column on the left, page padding on the
+     right) and pad both sides by the card column. The text box is then centred
+     on the screen and never runs under the card — at any width, no measuring. */
+  .contact-foot {
+    margin-left: calc(-1 * (var(--card-w) + var(--col-gap)));
+    margin-right: calc(-1 * var(--pad-r));
+    padding-inline: calc(var(--card-w) + var(--col-gap));
+  }
+}
+@media (max-width: 767px) {
+  .contact-foot { padding-bottom: 4.5rem; }   /* sit above the back-to-top button */
+}
 .eu-ack { max-width: 46em; margin: 0 auto 0.75rem; }
 
 /* ————— Mobile ————— */
