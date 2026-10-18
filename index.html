@@ -838,6 +838,54 @@
       lastY = y;
     };
     window.addEventListener('scroll', onSweepScroll, { passive: true });
+    // Keep the reading position when the width changes — folding or unfolding
+    // a phone, rotating it, resizing the window. While the page rests, note the
+    // smallest block under the nav and how far through it the reading line is;
+    // after a width change, scroll that same spot back under the nav. (Height-
+    // only changes, like a phone's address bar hiding, are left alone.)
+    const readBlocks = [...document.querySelectorAll(
+      'main section, main h2, main h3, main p, main li, main tr, main .card, main .xp-grid, main .table-wrap')];
+    const readLine = () => navHeight() + 8;
+    let reading = null;   // { w, intro: true } or { w, el, frac }
+    const noteReading = () => {
+      const w = window.innerWidth, line = readLine();
+      if (aboutSec.getBoundingClientRect().top > line) {
+        // Still in the intro (phones scroll through it): back to its start, or
+        // on to About if most of it was already scrolled past
+        reading = window.scrollY < heroSection.offsetHeight / 2
+          ? { w, intro: true } : { w, el: aboutSec, frac: 0 };
+        return;
+      }
+      let best = null, bestR = null;
+      readBlocks.forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (r.height && r.top <= line && r.bottom > line && (!bestR || r.height < bestR.height)) {
+          best = el; bestR = r;
+        }
+      });
+      if (best) reading = { w, el: best, frac: (line - bestR.top) / bestR.height };
+    };
+    const keepReading = () => {
+      const a = reading;
+      if (!a || a.w === window.innerWidth) return;
+      let y = 0;
+      if (!a.intro) {
+        const r = a.el.getBoundingClientRect();
+        y = window.scrollY + r.top + a.frac * r.height - readLine();
+        if (sweepOn()) y = Math.max(layoutTop(), y);   // never inside the hero → content zone
+        y = Math.min(document.documentElement.scrollHeight - window.innerHeight, Math.max(0, y));
+      }
+      gliding = false;   // a glide cut short by the resize is over
+      window.scrollTo({ top: y, behavior: 'instant' });
+      noteReading();
+    };
+    let readTimer = 0;
+    window.addEventListener('scroll', () => {
+      clearTimeout(readTimer);
+      // Only note positions at the size they were read at (a resize may still be pending)
+      readTimer = setTimeout(() => { if (!reading || reading.w === window.innerWidth) noteReading(); }, 150);
+    }, { passive: true });
+
     window.addEventListener('resize', () => {
       // The start and end were measured for the old size: jump to the end
       if (morph) {
@@ -845,9 +893,11 @@
         side.classList.toggle('docked', swept);
         side.classList.toggle('landed', swept);
       }
+      keepReading();
       onSweepScroll();
     });
     onSweepScroll();
+    noteReading();
 
     // Anchor links glide through the sweep state machine — otherwise
     // the hero zone correction hijacks nav jumps on larger screens.
