@@ -813,6 +813,39 @@ html.js .timeline.tracked::after {
   color: var(--gold);
 }
 .lang-table td:first-child { font-weight: 600; }
+/* Too narrow for five columns (phones, the narrow column beside the photo
+   card on portrait tablets): each language becomes a small block — the
+   name, then its four skills — so nothing needs a sideways swipe */
+.table-wrap { container-type: inline-size; }
+@container (max-width: 31rem) {
+  .lang-table, .lang-table tbody { display: block; }
+  .lang-table thead {   /* the labels move next to each level; kept for screen readers */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .lang-table tr {   /* name on top, the four skills in two even columns */
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.1rem 1rem;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .lang-table td { padding: 0; border: 0; }
+  .lang-table td:first-child { grid-column: 1 / -1; }
+  .lang-table td[data-label]::before {
+    content: attr(data-label);
+    margin-right: 0.4em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+}
 
 /* Skills */
 .skills-grid {
@@ -892,6 +925,15 @@ html.js .timeline.tracked::after {
   .hero-inner { padding-bottom: 2.25rem; }
   .hero-tagline { font-size: 1rem; }
 }
+/* Narrow screens: the hero text spans the width, so the side scroll hint
+   would cover it. A small arrow under the icons takes its place, in the
+   space the hero kept below them (the icons stay where they were). */
+.hero-arrow { display: none; }
+@media (max-width: 767px) {
+  #scroll-hint { display: none; }
+  .hero-inner { padding-bottom: 0.6rem; }
+  .hero-arrow { display: flex; margin-top: 0.3rem; }
+}
 
 /* ————— Accessibility: reduced motion ————— */
 @media (prefers-reduced-motion: reduce) {
@@ -909,7 +951,7 @@ html.js .timeline.tracked::after {
 
 /* ————— Print: the page doubles as a paper CV ————— */
 @media print {
-  #navbar, #nav-toggle, .side, .xp-rail, .video-slot, #to-top, #scroll-hint { display: none; }
+  #navbar, #nav-toggle, .side, .xp-rail, .video-slot, #to-top, #scroll-hint, .hero-arrow { display: none; }
   .hero { transform: none !important; opacity: 1 !important; visibility: visible !important; }
   body { background: #fff; font-size: 11pt; }
   .hero { min-height: auto; background: #fff; }
