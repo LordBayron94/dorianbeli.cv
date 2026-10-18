@@ -569,33 +569,84 @@
     const layoutTop = () =>
       layoutEl.getBoundingClientRect().top + window.scrollY - NAV_OFFSET;
 
-    let gliding = false, glideTarget = -1, lastY = window.scrollY;
+    let gliding = false, glideTarget = -1, glideStart = 0, lastY = window.scrollY;
     const setSwept = on => {
       heroSection.classList.toggle('swept', on);
       side.classList.toggle('docked', on);
     };
     const glideTo = top => {
+      // Already there: no scroll event would arrive to clear `gliding`
+      if (Math.abs(top - window.scrollY) < 1) return;
       gliding = true;
       glideTarget = top;
+      glideStart = performance.now();
       window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
     };
     const sweepDown = () => { setSwept(true); glideTo(layoutTop()); };
     const sweepUp = () => { setSwept(false); glideTo(0); };
 
-    window.addEventListener('wheel', e => {
-      if (!sweepOn()) return;
-      const zoneEnd = layoutTop();
-      if (e.deltaY > 0 && window.scrollY < zoneEnd - 4) {
-        e.preventDefault();
-        if (!gliding || glideTarget !== zoneEnd) sweepDown();
-      } else if (e.deltaY < 0 && window.scrollY > 0 && window.scrollY <= zoneEnd + 4) {
-        e.preventDefault();
-        if (!gliding || glideTarget !== 0) sweepUp();
+    // Mouse wheel / trackpad: one tick or swipe moves exactly one step and the
+    // page never rests part-way. Intro ↔ About goes through the sweep; after
+    // that it is section to section. A section taller than the screen is paged
+    // through in equal screen-sized steps (the last one lines up with its end),
+    // so nothing is skipped and two sections never share the screen. Every stop
+    // is at or past the content start, so the watchdog can't pull a step back
+    // to the top. Touch, keyboard and scrollbar keep native scrolling.
+    const sectionEls = [...document.querySelectorAll('main > section')];
+    const STOP_TOL = 24;   // px within which the page counts as "at" a stop
+    const wheelStops = () => {
+      const y = window.scrollY, navH = navHeight();
+      const visible = window.innerHeight - navH;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const zone = sweepOn() ? layoutTop() : 0;
+      const stops = [];
+      sectionEls.forEach(s => {
+        const top = s.getBoundingClientRect().top + y;
+        const start = Math.min(max, Math.max(zone, top - navH));
+        const end = Math.min(max, Math.max(start, top + s.offsetHeight - window.innerHeight));
+        const len = end - start;
+        const pages = len > STOP_TOL ? Math.ceil(len / visible) : 0;
+        for (let k = 0; k <= pages; k++) stops.push(pages ? start + (len * k) / pages : start);
+      });
+      return stops;
+    };
+    const wheelStep = dir => {
+      const y = window.scrollY, stops = wheelStops();
+      if (dir > 0) {
+        if (y < stops[0] - STOP_TOL) {
+          if (sweepOn()) sweepDown(); else glideTo(stops[0]);
+          return;
+        }
+        const next = stops.find(s => s > y + STOP_TOL);
+        if (next !== undefined) glideTo(next);
+      } else {
+        const prev = [...stops].reverse().find(s => s < y - STOP_TOL);
+        if (prev !== undefined) glideTo(prev);
+        else if (y > 1) { if (sweepOn()) sweepUp(); else glideTo(0); }
       }
+    };
+    let wheelBusy = false, lastWheelAt = 0;
+    const releaseWheel = () => {
+      // Free the wheel once the glide has landed AND the wheel has gone quiet,
+      // so one trackpad swipe (with its long momentum) is still one step.
+      const quiet = performance.now() - lastWheelAt > 220;
+      const landed = !gliding || performance.now() - glideStart > 1600;
+      if (quiet && landed) wheelBusy = false;
+      else setTimeout(releaseWheel, 60);
+    };
+    window.addEventListener('wheel', e => {
+      if (e.ctrlKey || !e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // pinch-zoom, sideways
+      e.preventDefault();
+      lastWheelAt = performance.now();
+      if (wheelBusy) return;
+      wheelBusy = true;
+      wheelStep(e.deltaY > 0 ? 1 : -1);
+      releaseWheel();
     }, { passive: false });
 
     const onSweepScroll = () => {
       const y = window.scrollY;
+      if (gliding && Math.abs(y - glideTarget) < 4) gliding = false;
       if (!sweepOn()) {
         // Phones: no left transition, panel stays hidden
         setSwept(y > 4);
@@ -603,7 +654,6 @@
         return;
       }
       const zoneEnd = layoutTop();
-      if (gliding && Math.abs(y - glideTarget) < 4) gliding = false;
       if (y >= zoneEnd - 4) {
         setSwept(true);
       } else if (y <= 4) {
