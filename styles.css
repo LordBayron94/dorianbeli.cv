@@ -234,38 +234,46 @@ abbr { text-decoration: none; }
 @media (min-width: 768px) {
   .layout { scroll-margin-top: 76px; }
 }
-/* Blurred ambient copy fills the edges; the sharp photo sits on top,
-   fully visible (contain) so nothing of it is cropped away. */
+/* <picture> only chooses the file; the <img> inside is laid out as before
+   (not as a flex item of the hero) */
+.hero > picture,
+.side > picture { display: contents; }
+/* Blurred ambient copy fills the edges; the sharp photo sits on top. Wide
+   screens show the band around the face; tall ones the photo's whole height. */
 .hero-backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 22%;
+  object-position: 50% 40%;
   filter: blur(28px) brightness(0.72) saturate(1.05);
   transform: scale(1.1); /* hide blurred edge fringing */
 }
-/* The sharp photo is sized to the picture itself — as large as fits, never
-   cropped — so its edges can fade softly into the blurred backdrop. Only the
-   sides that meet the blur fade: left/right on screens wider than the photo,
+/* The sharp photo shows the Home crop of the portrait: its full width, rows
+   800–3040 of 4000 (2252 × 2240). It is as large as fits and never cut
+   further, so its edges can fade softly into the blurred backdrop. Only the
+   sides that meet the blur fade: left/right on screens wider than the crop,
    top/bottom on taller ones. */
 .hero-bg {
   --fade: clamp(24px, 4.5%, 72px);
   position: absolute;
   left: 50%;
   top: 45%;
-  width: min(100%, 100svh * 960 / 955);
+  width: min(100%, 100svh * 2252 / 2240);
   height: auto;
+  aspect-ratio: 2252 / 2240;       /* the crop's shape, not the whole photo's */
+  object-fit: cover;
+  object-position: 50% 45.4545%;   /* crop top at row 800: 800 / (4000 − 2240) of the spare height */
   transform: translate(-50%, -45%);
 }
-@media (min-aspect-ratio: 960/955) {
+@media (min-aspect-ratio: 2252/2240) {
   .hero-bg {
     -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
             mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
   }
 }
-@media (max-aspect-ratio: 960/955) {
+@media (max-aspect-ratio: 2252/2240) {
   .hero-bg {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
             mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--fade) * .35), rgba(0,0,0,.75) calc(var(--fade) * .7), #000 var(--fade), #000 calc(100% - var(--fade)), rgba(0,0,0,.75) calc(100% - var(--fade) * .7), rgba(0,0,0,.3) calc(100% - var(--fade) * .35), transparent 100%);
@@ -412,7 +420,7 @@ html.js .side.docked {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 46% 22%; /* keep the face in view in the tall crop */
+  object-position: 46% 50%; /* the whole photo: full height on every card shape, face and raised hand in view */
 }
 .side-shade {
   position: absolute;
@@ -488,13 +496,13 @@ html.js .side.docked {
   transform-origin: 0 0;
   will-change: transform;
 }
-@media (min-aspect-ratio: 960/955) {
+@media (min-aspect-ratio: 2252/2240) {
   #photo-morph {
     -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
             mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
   }
 }
-@media (max-aspect-ratio: 960/955) {
+@media (max-aspect-ratio: 2252/2240) {
   #photo-morph {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
             mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);

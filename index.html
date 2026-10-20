@@ -43,12 +43,30 @@
     </span>
   </div>
 
-  <!-- Full-screen photo hero. Text sits on a gradient that fades to black at the bottom. -->
+  <!-- Full-screen photo hero. Text sits on a gradient that fades to black at the bottom.
+       One portrait photo (2252×4000) is shown blurred behind the hero, as the Home crop
+       and whole in the card. All three <picture>s list the same sources, so the browser
+       picks one file and downloads and decodes it once: AVIF, else WebP, else JPG; the
+       full size from 768px (big hero, card), the half size on phones. Keep them identical. -->
   <header id="top" class="hero">
-    <img class="hero-backdrop" src="assets/photo.jpg" alt="" aria-hidden="true"
-         onerror="this.style.display='none'">
-    <img class="hero-bg" src="assets/photo.jpg" alt="" fetchpriority="high"
-         onerror="this.style.display='none'">
+    <picture>
+      <source media="(min-width: 768px)" type="image/avif" srcset="assets/photo-2252.avif">
+      <source media="(min-width: 768px)" type="image/webp" srcset="assets/photo-2252.webp">
+      <source media="(min-width: 768px)" srcset="assets/photo-2252.jpg">
+      <source type="image/avif" srcset="assets/photo-1126.avif">
+      <source type="image/webp" srcset="assets/photo-1126.webp">
+      <img class="hero-backdrop" src="assets/photo-1126.jpg" alt="" aria-hidden="true"
+           onerror="this.style.display='none'">
+    </picture>
+    <picture>
+      <source media="(min-width: 768px)" type="image/avif" srcset="assets/photo-2252.avif">
+      <source media="(min-width: 768px)" type="image/webp" srcset="assets/photo-2252.webp">
+      <source media="(min-width: 768px)" srcset="assets/photo-2252.jpg">
+      <source type="image/avif" srcset="assets/photo-1126.avif">
+      <source type="image/webp" srcset="assets/photo-1126.webp">
+      <img class="hero-bg" src="assets/photo-1126.jpg" alt="" fetchpriority="high"
+           onerror="this.style.display='none'">
+    </picture>
     <div class="hero-shade" aria-hidden="true"></div>
     <div class="hero-inner">
       <h1>Dorian&nbsp;Beli</h1>
@@ -92,10 +110,18 @@
   <div class="layout">
 
     <!-- Docked profile panel: slides in from the left once the hero scrolls away.
-         Same photo as background, same identity block as the hero. -->
+         Same photo as background (the whole of it; same sources as the hero),
+         same identity block as the hero. -->
     <aside class="side" id="side" aria-label="Profile summary">
-      <img class="side-bg" src="assets/photo.jpg" alt="" loading="lazy"
-           onerror="this.style.display='none'">
+      <picture>
+        <source media="(min-width: 768px)" type="image/avif" srcset="assets/photo-2252.avif">
+        <source media="(min-width: 768px)" type="image/webp" srcset="assets/photo-2252.webp">
+        <source media="(min-width: 768px)" srcset="assets/photo-2252.jpg">
+        <source type="image/avif" srcset="assets/photo-1126.avif">
+        <source type="image/webp" srcset="assets/photo-1126.webp">
+        <img class="side-bg" src="assets/photo-1126.jpg" alt="" loading="lazy"
+             onerror="this.style.display='none'">
+      </picture>
       <div class="side-shade" aria-hidden="true"></div>
       <div class="side-content">
         <p class="side-name">Dorian Beli</p>
@@ -665,7 +691,7 @@
     // The hero photo's soft edge (--fade: clamp(24px, 4.5%, 72px) in
     // styles.css) in px: across the box where it meets the blur at the sides,
     // top to bottom where it meets it above and below
-    const FADE_SIDES = matchMedia('(min-aspect-ratio: 960/955)');
+    const FADE_SIDES = matchMedia('(min-aspect-ratio: 2252/2240)');
     const heroFade = f =>
       Math.min(72, Math.max(24, 0.045 * (FADE_SIDES.matches ? f.w : f.h))) + 'px';
     // Keyframe pieces: the frame is the layer's mask box, the photo a transform
