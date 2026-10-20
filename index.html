@@ -562,9 +562,12 @@
       }
       navAnchors.forEach(a =>
         a.classList.toggle('active', a.getAttribute('href') === '#' + activeId));
-      // Scroll-down hint: gone as soon as About enters the viewport
+      // Scroll-down hint: gone as soon as About comes into view. With the same
+      // few px of slack the sweep allows at the top: innerHeight is rounded to
+      // whole px while the layout is not (e.g. 789.6 px at 125% display
+      // scaling), so an exact compare hid the hint while still at the top.
       scrollHint.classList.toggle(
-        'hide', aboutSec.getBoundingClientRect().top < window.innerHeight);
+        'hide', aboutSec.getBoundingClientRect().top < window.innerHeight - 4);
     };
     let spyTick = false;
     const onSpy = () => {
