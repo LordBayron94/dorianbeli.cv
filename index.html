@@ -585,18 +585,21 @@
     };
 
     // Home ↔ About on wide screens: the hero photo itself travels into the
-    // card. A fixed copy glides from where the photo sits in the hero to the
-    // card while its frame narrows to the card's crop (the same object-fit /
-    // object-position the card uses), then the real card takes over in exactly
-    // the same spot. Start and end are measured from the page, so it fits
-    // every screen. Reversed on the way back; turning round halfway plays it
-    // back from where it is.
+    // card. A fixed copy of the photo glides from where it sits in the hero to
+    // where the card shows it, inside a frame that moves from the hero photo's
+    // box to the card's (both crop the same photo with object-fit: cover and
+    // their own object-position). Then the real card takes over in exactly the
+    // same spot. Start and end are measured from the page, so it fits every
+    // screen. Reversed on the way back; turning round halfway plays it back
+    // from where it is.
     const heroBg = heroSection.querySelector('.hero-bg');
     const sideBg = side.querySelector('.side-bg');
     const MORPH_MS = 700;
     const MORPH_EASE = 'cubic-bezier(0.65, 0, 0.25, 1)';
-    const canMorph = !reduceMotion && 'animate' in Element.prototype &&
-      window.CSS && CSS.supports('clip-path', 'inset(1px)');
+    // The frame is a mask box with an animated soft edge (--mfade): without
+    // those the card simply docks, as with reduced motion
+    const canMorph = !reduceMotion && 'animate' in Element.prototype && window.CSS &&
+      CSS.supports('mask-size', '1px 1px') && 'registerProperty' in CSS;
     if (canMorph) document.documentElement.classList.add('morph');
     const morphLayer = document.createElement('div');
     morphLayer.id = 'photo-morph';
@@ -612,40 +615,64 @@
     morphBg.setAttribute('aria-hidden', 'true');
     document.body.append(morphBg, morphLayer);
     let morph = null;   // { dir: 'in' | 'out', anims, ended, landing }
-    const useMorph = () => canMorph && sweepOn() && heroBg.naturalWidth > 0;
 
-    // The photo in the hero, in screen coordinates with the page at scroll y
+    // The copies are primed as soon as the browser has picked and loaded the
+    // photo (and again if a resize makes <picture> pick the other size), so
+    // the first frame of the move never waits for a decode. Until then the
+    // card simply docks without the move.
+    let copyReady = false;
+    const primeCopies = () => {
+      const src = heroBg.currentSrc || heroBg.src;
+      if (!heroBg.naturalWidth || morphImg.src === src) return;
+      copyReady = false;
+      morphImg.src = src;
+      morphBg.src = src;
+      morphImg.style.width = heroBg.naturalWidth + 'px';
+      morphImg.style.height = heroBg.naturalHeight + 'px';
+      Promise.all([morphImg.decode(), morphBg.decode()]).then(
+        () => { copyReady = morphImg.src === (heroBg.currentSrc || heroBg.src); },
+        () => {});
+    };
+    heroBg.addEventListener('load', primeCopies);
+    if (heroBg.complete) primeCopies();
+    const useMorph = () => canMorph && sweepOn() && copyReady;
+
+    // ——— Photo geometry, in screen px ———
+    // Where an object-fit: cover photo lands inside a box, honouring the
+    // object-position of the element that shows it (plain % or px). The hero
+    // and the card crop the same photo with different boxes, so this one
+    // helper describes both ends of the move.
+    const coverIn = (box, el) => {
+      const nw = heroBg.naturalWidth, nh = heroBg.naturalHeight;   // the same file everywhere
+      const s = Math.max(box.w / nw, box.h / nh), w = nw * s, h = nh * s;
+      const [ox, oy] = getComputedStyle(el).objectPosition.split(' ');
+      const at = (v, free) => v.endsWith('%') ? free * parseFloat(v) / 100 : parseFloat(v);
+      return { x: box.x + at(ox, box.w - w), y: box.y + at(oy, box.h - h), w, h };
+    };
+    // Home with the page at scroll position y: the hero photo's box (frame)
+    // and the whole photo as that box crops it (img)
     const heroAt = y => {
       const r = heroBg.getBoundingClientRect();
-      return { x: r.left, y: r.top + window.scrollY - y, w: r.width, h: r.height };
+      const frame = { x: r.left, y: r.top + window.scrollY - y, w: r.width, h: r.height };
+      return { frame, img: coverIn(frame, heroBg) };
     };
-    // The card: its frame, and the photo as the card crops it
+    // The card: its frame right under the nav, and the photo as the card crops it
     const cardAt = () => {
-      const w = side.offsetWidth, h = side.offsetHeight, top = navHeight();
-      const nw = heroBg.naturalWidth, nh = heroBg.naturalHeight;
-      const s = Math.max(w / nw, h / nh);
-      const [px, py] = getComputedStyle(sideBg).objectPosition.split(' ').map(v => parseFloat(v) / 100);
-      const left = side.getBoundingClientRect().left;
-      return { frame: { x: left, y: top, w, h },
-               img: { x: left + (w - nw * s) * px, y: top + (h - nh * s) * py, w: nw * s, h: nh * s } };
+      const frame = { x: side.getBoundingClientRect().left, y: navHeight(),
+                      w: side.offsetWidth, h: side.offsetHeight };
+      return { frame, img: coverIn(frame, sideBg) };
     };
-    // The hero photo's soft edge, in the copy's own (unscaled) pixels
-    const heroFade = r => {
-      const sides = matchMedia('(min-aspect-ratio: 960/955)').matches;
-      const px = Math.min(72, Math.max(24, 0.045 * (sides ? r.w : r.h)));
-      return px / (r.w / heroBg.naturalWidth) + 'px';
-    };
-    const clip = f => {
-      const W = morphLayer.clientWidth, H = morphLayer.clientHeight;
-      return `inset(${f.y}px ${W - f.x - f.w}px ${H - f.y - f.h}px ${f.x}px)`;
-    };
+    // The hero photo's soft edge (--fade: clamp(24px, 4.5%, 72px) in
+    // styles.css) in px: across the box where it meets the blur at the sides,
+    // top to bottom where it meets it above and below
+    const FADE_SIDES = matchMedia('(min-aspect-ratio: 960/955)');
+    const heroFade = f =>
+      Math.min(72, Math.max(24, 0.045 * (FADE_SIDES.matches ? f.w : f.h))) + 'px';
+    // Keyframe pieces: the frame is the layer's mask box, the photo a transform
+    const frameAt = f => ({ maskPosition: `${f.x}px ${f.y}px`, maskSize: `${f.w}px ${f.h}px` });
     const place = r => `translate(${r.x}px, ${r.y}px) scale(${r.w / heroBg.naturalWidth})`;
 
     const startMorph = dir => {
-      morphImg.src = heroBg.currentSrc || heroBg.src;
-      morphImg.style.width = heroBg.naturalWidth + 'px';
-      morphImg.style.height = heroBg.naturalHeight + 'px';
-      morphBg.src = morphImg.src;
       morphLayer.classList.add('on');
       morphBg.classList.add('on');
       heroSection.classList.add('morphing');   // the copies stand in for the hero's photo and blur
@@ -657,15 +684,15 @@
         setTimeout(() => side.classList.remove('leaving'), 450);
       }
       // Keyframes run hero → card; the way back plays them in reverse. The
-      // photo's soft edge and the blur go early in the move (and return late
-      // on the way back).
+      // frame's soft edge and the blur go early in the move (and return late
+      // on the way back), so the frame opens up with sharp edges.
       const opts = { duration: MORPH_MS, easing: MORPH_EASE, fill: 'both',
                      direction: dir === 'in' ? 'normal' : 'reverse' };
       const m = { dir, ended: false, landing: false, anims: [
-        morphImg.animate([{ transform: place(hero), '--mfade': heroFade(hero) },
-                          { '--mfade': '0px', offset: 0.25 },
-                          { transform: place(card.img), '--mfade': '0px' }], opts),
-        morphLayer.animate([{ clipPath: clip(hero) }, { clipPath: clip(card.frame) }], opts),
+        morphImg.animate([{ transform: place(hero.img) }, { transform: place(card.img) }], opts),
+        morphLayer.animate([{ ...frameAt(hero.frame), '--mfade': heroFade(hero.frame) },
+                            { '--mfade': '0px', offset: 0.25 },
+                            { ...frameAt(card.frame), '--mfade': '0px' }], opts),
         morphBg.animate([{ opacity: 1 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], opts)
       ] };
       m.anims[0].onfinish = () => { m.ended = true; land(); };

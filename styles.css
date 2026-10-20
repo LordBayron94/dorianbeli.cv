@@ -461,9 +461,14 @@ html.js .side.docked {
 
 /* ————— Home ↔ About: the hero photo itself travels into the card ————— */
 /* JS adds html.morph (wide screens, motion allowed). A fixed copy of the
-   photo glides from the hero to the card while its frame narrows to the
-   card's crop; the hero text and blur fade, then the real card takes over
-   in exactly the same spot (and the other way round on the way back). */
+   photo glides from the hero to the card inside a frame that moves from the
+   hero photo's box to the card's; the hero text and blur fade, then the real
+   card takes over in exactly the same spot (and the other way round on the
+   way back).
+   The frame is a soft-edged window in screen space: the layer's mask, whose
+   box (mask-position / mask-size) JS animates. Its edges start out faded like
+   the hero photo's (--mfade, at the sides that meet the blur) and are sharp
+   by the time the frame opens up. Outside the box nothing shows. */
 @property --mfade { syntax: "<length>"; inherits: false; initial-value: 0px; }
 #photo-morph {
   position: fixed;
@@ -471,6 +476,8 @@ html.js .side.docked {
   z-index: 12;          /* over the content, under the nav */
   pointer-events: none;
   display: none;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
 }
 #photo-morph.on { display: block; }
 #photo-morph img {
@@ -482,13 +489,13 @@ html.js .side.docked {
   will-change: transform;
 }
 @media (min-aspect-ratio: 960/955) {
-  #photo-morph img {
+  #photo-morph {
     -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
             mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
   }
 }
 @media (max-aspect-ratio: 960/955) {
-  #photo-morph img {
+  #photo-morph {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
             mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) calc(var(--mfade) * .35), rgba(0,0,0,.75) calc(var(--mfade) * .7), #000 var(--mfade), #000 calc(100% - var(--mfade)), rgba(0,0,0,.75) calc(100% - var(--mfade) * .7), rgba(0,0,0,.3) calc(100% - var(--mfade) * .35), transparent 100%);
   }
