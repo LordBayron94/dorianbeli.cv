@@ -602,6 +602,10 @@
       layoutEl.getBoundingClientRect().top + window.scrollY - navHeight();
 
     let gliding = false, glideTarget = -1, glideStart = 0, lastY = window.scrollY;
+    // A glide that hasn't arrived after GLIDE_MAX_MS was interrupted (Home key,
+    // scrollbar, touch), or can't arrive, once the page has been still for GLIDE_REST_MS
+    const GLIDE_MAX_MS = 1600, GLIDE_REST_MS = 120;
+    let glideTimer = 0, lastScrollAt = 0, travel = 0, prevScrollY = window.scrollY;
     let swept = false;
     const setSwept = on => {
       if (on === swept) return;
@@ -777,7 +781,24 @@
       gliding = true;
       glideTarget = top;
       glideStart = performance.now();
+      clearTimeout(glideTimer);
+      glideTimer = setTimeout(endGlide, GLIDE_MAX_MS);
       window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
+    };
+    // The glide didn't arrive: once the page is still, stop waiting for it and settle
+    // the state from where the page really is (plays the photo move back or on, so it
+    // lands and the wheel is freed)
+    const endGlide = () => {
+      if (!gliding) return;
+      const still = performance.now() - lastScrollAt;
+      if (still < GLIDE_REST_MS) {           // still moving: let a long glide finish
+        glideTimer = setTimeout(endGlide, GLIDE_REST_MS - still);
+        return;
+      }
+      gliding = false;
+      const y = window.scrollY;
+      if (sweepOn() && y > 4 && y < layoutTop() - 4) (travel > 0 ? sweepDown : sweepUp)();
+      else onSweepScroll();
     };
     const sweepDown = () => { setSwept(true); glideTo(layoutTop()); };
     const sweepUp = () => { setSwept(false); glideTo(0); };
@@ -854,7 +875,7 @@
       // Free the wheel once the glide has landed AND the wheel has gone quiet,
       // so one trackpad swipe (with its long momentum) is still one step.
       const quiet = performance.now() - lastWheelAt > 220;
-      const landed = (!gliding || performance.now() - glideStart > 1600) && !morph;
+      const landed = (!gliding || performance.now() - glideStart > GLIDE_MAX_MS) && !morph;
       if (quiet && landed) wheelBusy = false;
       else setTimeout(releaseWheel, 60);
     };
@@ -870,7 +891,7 @@
 
     const onSweepScroll = () => {
       const y = window.scrollY;
-      if (gliding && Math.abs(y - glideTarget) < 4) gliding = false;
+      if (gliding && Math.abs(y - glideTarget) < 4) { gliding = false; clearTimeout(glideTimer); }
       if (morph) land();   // the photo may be waiting for the page to arrive
       if (!sweepOn()) {
         // Phones: no left transition, panel stays hidden
@@ -880,7 +901,7 @@
       }
       // While a glide runs, the move that started it decides the state (the
       // first frames of a glide down from the intro are still near the top)
-      if (gliding && performance.now() - glideStart < 1600) { lastY = y; return; }
+      if (gliding && performance.now() - glideStart < GLIDE_MAX_MS) { lastY = y; return; }
       const zoneEnd = layoutTop();
       if (y >= zoneEnd - 4) {
         setSwept(true);
@@ -893,7 +914,13 @@
       }
       lastY = y;
     };
-    window.addEventListener('scroll', onSweepScroll, { passive: true });
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (y !== prevScrollY) travel = y > prevScrollY ? 1 : -1;
+      prevScrollY = y;
+      lastScrollAt = performance.now();
+      onSweepScroll();
+    }, { passive: true });
     // Keep the reading position when the width changes — folding or unfolding
     // a phone, rotating it, resizing the window. While the page rests, note the
     // smallest block under the nav and how far through it the reading line is;
@@ -932,6 +959,7 @@
         y = Math.min(document.documentElement.scrollHeight - window.innerHeight, Math.max(0, y));
       }
       gliding = false;   // a glide cut short by the resize is over
+      clearTimeout(glideTimer);
       window.scrollTo({ top: y, behavior: 'instant' });
       noteReading();
     };
